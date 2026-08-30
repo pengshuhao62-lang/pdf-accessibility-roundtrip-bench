@@ -1,0 +1,44 @@
+name: PDF Accessibility Roundtrip Bench
+description: Run a machine-verifiable PDF/UA roundtrip benchmark.
+author: Shuhao Peng
+inputs:
+  profiles:
+    description: Comma-separated profiles to test.
+    required: false
+    default: ua1,ua2
+  tools:
+    description: Comma-separated transformation tools to test.
+    required: false
+    default: qpdf,pymupdf,ghostscript
+  operations:
+    description: Comma-separated operations to test.
+    required: false
+    default: merge,split,resave
+  corpus:
+    description: Path to the corpus manifest.
+    required: false
+    default: corpus/manifest.json
+  output:
+    description: JSON report path.
+    required: false
+    default: lab/runs/run.json
+runs:
+  using: composite
+  steps:
+    - name: Run PDF Accessibility Roundtrip Bench
+      shell: bash
+      env:
+        PDFUA_BENCH_PROFILES: ${{ inputs.profiles }}
+        PDFUA_BENCH_TOOLS: ${{ inputs.tools }}
+        PDFUA_BENCH_OPERATIONS: ${{ inputs.operations }}
+        PDFUA_BENCH_CORPUS: ${{ inputs.corpus }}
+        PDFUA_BENCH_OUTPUT: ${{ inputs.output }}
+      run: |
+        set -euo pipefail
+        export PYTHONPATH="${GITHUB_ACTION_PATH}/src${PYTHONPATH:+:${PYTHONPATH}}"
+        python3 -m pdfua_bench run \
+          --profiles "${PDFUA_BENCH_PROFILES}" \
+          --tools "${PDFUA_BENCH_TOOLS}" \
+          --operations "${PDFUA_BENCH_OPERATIONS}" \
+          --corpus "${PDFUA_BENCH_CORPUS}" \
+          --output "${PDFUA_BENCH_OUTPUT}"

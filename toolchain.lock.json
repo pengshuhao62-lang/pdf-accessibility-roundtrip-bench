@@ -1,0 +1,33 @@
+{
+  "schema_version": "0.1",
+  "platform": "macos-arm64",
+  "python": "3.9.6",
+  "tools": {
+    "verapdf": {
+      "version": "1.30.2",
+      "source": "https://software.verapdf.org/rel/1.30/verapdf-greenfield-1.30.2-installer.zip"
+    },
+    "qpdf": {
+      "version": "12.3.2",
+      "source": "conda-forge"
+    },
+    "ghostscript": {
+      "version": "10.07.1",
+      "source": "conda-forge"
+    },
+    "java": {
+      "version": "17.0.18",
+      "source": "conda-forge"
+    }
+  },
+  "python_packages": {
+    "PyMuPDF": "1.26.5",
+    "pypdf": "6.16.2",
+    "reportlab": "5.0.1"
+  },
+  "notes": [
+    "The toolchain is installed outside the repository on the external SSD.",
+    "No private PDFs or runtime logs are part of the public repository.",
+    "Versions are recorded for reproducibility and are not upgraded automatically."
+  ]
+}

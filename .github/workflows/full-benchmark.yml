@@ -1,0 +1,84 @@
+name: Full macOS benchmark
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+      - name: Install qpdf and Ghostscript
+        run: brew install qpdf ghostscript
+      - name: Install veraPDF
+        env:
+          VERA_VERSION: "1.30.2"
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 \
+            "https://software.verapdf.org/rel/1.30/verapdf-greenfield-${VERA_VERSION}-installer.zip" \
+            -o "$RUNNER_TEMP/verapdf-installer.zip"
+          unzip -q "$RUNNER_TEMP/verapdf-installer.zip" -d "$RUNNER_TEMP/verapdf-installer"
+          cat > "$RUNNER_TEMP/verapdf-install.xml" <<EOF
+          <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <AutomatedInstallation langpack="eng">
+            <com.izforge.izpack.panels.htmlhello.HTMLHelloPanel id="welcome"/>
+            <com.izforge.izpack.panels.target.TargetPanel id="install_dir">
+              <installpath>$RUNNER_TEMP/verapdf</installpath>
+            </com.izforge.izpack.panels.target.TargetPanel>
+            <com.izforge.izpack.panels.packs.PacksPanel id="sdk_pack_select">
+              <pack index="0" name="veraPDF GUI" selected="false"/>
+              <pack index="1" name="veraPDF Mac and *nix Scripts" selected="true"/>
+              <pack index="2" name="veraPDF Validation model" selected="true"/>
+              <pack index="3" name="veraPDF Documentation" selected="false"/>
+              <pack index="4" name="veraPDF Sample Plugins" selected="false"/>
+            </com.izforge.izpack.panels.packs.PacksPanel>
+            <com.izforge.izpack.panels.install.InstallPanel id="install"/>
+            <com.izforge.izpack.panels.finish.FinishPanel id="finish"/>
+          </AutomatedInstallation>
+          EOF
+          JAVA_TOOL_OPTIONS="-Duser.home=$RUNNER_TEMP/verapdf-home" \
+            "$RUNNER_TEMP/verapdf-installer/verapdf-greenfield-${VERA_VERSION}/verapdf-install" \
+            "$RUNNER_TEMP/verapdf-install.xml"
+      - name: Install project dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -e .
+      - name: Run preflight
+        env:
+          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf/verapdf
+        run: python -m pdfua_bench preflight --json
+      - name: Verify corpus
+        env:
+          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf/verapdf
+        run: python -m pdfua_bench verify-corpus
+      - name: Run full benchmark matrix
+        env:
+          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf/verapdf
+        run: |
+          python -m pdfua_bench run \
+            --profiles ua1,ua2 \
+            --tools qpdf,pymupdf,ghostscript \
+            --operations merge,split,resave \
+            --output lab/runs/run.json
+          mkdir -p reports/generated
+          python -m pdfua_bench summarize \
+            --input lab/runs/run.json \
+            --format markdown \
+            --output reports/generated/run.md
+      - name: Upload sanitized summaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfua-bench-macos-summary
+          path: |
+            lab/runs/run.json
+            reports/generated/run.md
+          if-no-files-found: error

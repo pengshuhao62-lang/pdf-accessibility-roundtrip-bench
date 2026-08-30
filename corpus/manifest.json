@@ -1,0 +1,205 @@
+{
+  "schema_version": "0.1",
+  "fixtures": [
+    {
+      "id": "ua1-ref-2-01-magazine-danish",
+      "profile": "ua1",
+      "path": "ua1/reference/PDFUA-Ref-2-01_Magazine-danish.pdf",
+      "source": "PDF Association PDF/UA-1 Reference Suite 1.1",
+      "license": "CC-BY-4.0",
+      "sha256": "aef89af13c9c94fc4f4e1a8c5872450cc4c8fff7de544d8ada6a0912425aa434",
+      "expected_pages": 32,
+      "merge_partner": "ua1-ref-2-02-invoice"
+    },
+    {
+      "id": "ua1-ref-2-02-invoice",
+      "profile": "ua1",
+      "path": "ua1/reference/PDFUA-Ref-2-02_Invoice.pdf",
+      "source": "PDF Association PDF/UA-1 Reference Suite 1.1",
+      "license": "CC-BY-4.0",
+      "sha256": "fbae08464f192f532205833215505b78266e86df6283d9b0c439cb06927ce0b9",
+      "expected_pages": 1,
+      "merge_partner": "ua1-ref-2-03-academicabstract"
+    },
+    {
+      "id": "ua1-ref-2-03-academicabstract",
+      "profile": "ua1",
+      "path": "ua1/reference/PDFUA-Ref-2-03_AcademicAbstract.pdf",
+      "source": "PDF Association PDF/UA-1 Reference Suite 1.1",
+      "license": "CC-BY-4.0",
+      "sha256": "e61257d371261867926eb006f8895569a95fcfbcb93fca3be04b8b9187cb93a0",
+      "expected_pages": 2,
+      "merge_partner": "ua1-ref-2-04-presentation"
+    },
+    {
+      "id": "ua1-ref-2-04-presentation",
+      "profile": "ua1",
+      "path": "ua1/reference/PDFUA-Ref-2-04_Presentation.pdf",
+      "source": "PDF Association PDF/UA-1 Reference Suite 1.1",
+      "license": "CC-BY-4.0",
+      "sha256": "90acb829ca8bfa037796592539d15010e9099d1cd2622aac1fce7d9fd3ae7575",
+      "expected_pages": 8,
+      "merge_partner": "ua1-ref-2-05-bookchapter-german"
+    },
+    {
+      "id": "ua1-ref-2-05-bookchapter-german",
+      "profile": "ua1",
+      "path": "ua1/reference/PDFUA-Ref-2-05_BookChapter-german.pdf",
+      "source": "PDF Association PDF/UA-1 Reference Suite 1.1",
+      "license": "CC-BY-4.0",
+      "sha256": "fc525b8899da31779b6143c16053779cd560d4417018a901472de33c71252352",
+      "expected_pages": 21,
+      "merge_partner": "ua1-ref-2-06-brochure"
+    },
+    {
+      "id": "ua1-ref-2-06-brochure",
+      "profile": "ua1",
+      "path": "ua1/reference/PDFUA-Ref-2-06_Brochure.pdf",
+      "source": "PDF Association PDF/UA-1 Reference Suite 1.1",
+      "license": "CC-BY-4.0",
+      "sha256": "aefd5ab48a908b9996ffadcb14d8ff31a2c653657cbe011a46f4cf61396a589e",
+      "expected_pages": 2,
+      "merge_partner": "ua1-ref-2-08-bookchapter"
+    },
+    {
+      "id": "ua1-ref-2-08-bookchapter",
+      "profile": "ua1",
+      "path": "ua1/reference/PDFUA-Ref-2-08_BookChapter.pdf",
+      "source": "PDF Association PDF/UA-1 Reference Suite 1.1",
+      "license": "CC-BY-4.0",
+      "sha256": "2b958600daec79373736f413f2712fcd9c604de2c352cbc1ec9d67cc5d7932f1",
+      "expected_pages": 32,
+      "merge_partner": "ua1-ref-2-09-scanned"
+    },
+    {
+      "id": "ua1-ref-2-09-scanned",
+      "profile": "ua1",
+      "path": "ua1/reference/PDFUA-Ref-2-09_Scanned.pdf",
+      "source": "PDF Association PDF/UA-1 Reference Suite 1.1",
+      "license": "CC-BY-4.0",
+      "sha256": "bb46d5c723fe1427dd1bf92ccd8653f9a5cef4054f7d878168b99477fa3792ae",
+      "expected_pages": 82,
+      "merge_partner": "ua1-ref-2-10-form"
+    },
+    {
+      "id": "ua1-ref-2-10-form",
+      "profile": "ua1",
+      "path": "ua1/reference/PDFUA-Ref-2-10_Form.pdf",
+      "source": "PDF Association PDF/UA-1 Reference Suite 1.1",
+      "license": "CC-BY-4.0",
+      "sha256": "06d5cacd7c5ba9573a57c6d99d3f357ee14a24cff0c138036840fc44c6311806",
+      "expected_pages": 1,
+      "merge_partner": "ua1-heading-001"
+    },
+    {
+      "id": "ua1-heading-001",
+      "profile": "ua1",
+      "path": "ua1/ua1-heading-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "f1dedd939495d0666005d24b50caf4ad79c2f34c0b6479dbc579cc66078f78b4",
+      "expected_pages": 1,
+      "merge_partner": "ua1-link-001"
+    },
+    {
+      "id": "ua1-link-001",
+      "profile": "ua1",
+      "path": "ua1/ua1-link-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "949cf02c7ee09a1f9eebe3676c7956cb19f458168fb96fff8ed0bdc2be439f23",
+      "expected_pages": 1,
+      "merge_partner": "ua1-list-001"
+    },
+    {
+      "id": "ua1-list-001",
+      "profile": "ua1",
+      "path": "ua1/ua1-list-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "3342637a928a900ded998a0166c5050384de7e4ed3a38424b16b4e6f377dee8f",
+      "expected_pages": 1,
+      "merge_partner": "ua1-paragraph-001"
+    },
+    {
+      "id": "ua1-paragraph-001",
+      "profile": "ua1",
+      "path": "ua1/ua1-paragraph-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "49aab211a8add808f67de8a1d1091f960fc116fa38e18c95717c17891c7f3acc",
+      "expected_pages": 1,
+      "merge_partner": "ua1-table-001"
+    },
+    {
+      "id": "ua1-table-001",
+      "profile": "ua1",
+      "path": "ua1/ua1-table-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "dd2abec3afb5b209a96f35dc9af449c7154602b030bba415e8fa5dd0070fa503",
+      "expected_pages": 2,
+      "merge_partner": "ua1-unicode-001"
+    },
+    {
+      "id": "ua1-unicode-001",
+      "profile": "ua1",
+      "path": "ua1/ua1-unicode-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "c5c46af84c9cdb13f49cd396726804df1be6fbb17d968643707b9bd90678f9a9",
+      "expected_pages": 1,
+      "merge_partner": "ua1-ref-2-01-magazine-danish"
+    },
+    {
+      "id": "ua2-heading-001",
+      "profile": "ua2",
+      "path": "ua2/ua2-heading-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "7add3ab49dc46166bab7f0f481ce3daffa020a7c3a15d285dbf8c821298b7e99",
+      "expected_pages": 1,
+      "merge_partner": "ua2-link-001"
+    },
+    {
+      "id": "ua2-link-001",
+      "profile": "ua2",
+      "path": "ua2/ua2-link-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "d9ad6aeb0285c1fb8ae300a942639df3f71ac765112cd5ea70fa8f6067119c48",
+      "expected_pages": 1,
+      "merge_partner": "ua2-paragraph-001"
+    },
+    {
+      "id": "ua2-paragraph-001",
+      "profile": "ua2",
+      "path": "ua2/ua2-paragraph-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "2012ef562f781103bdce46cc52d84a506a0705fb081a874b37e31467a6b67655",
+      "expected_pages": 1,
+      "merge_partner": "ua2-table-001"
+    },
+    {
+      "id": "ua2-table-001",
+      "profile": "ua2",
+      "path": "ua2/ua2-table-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "a650a83522e23ec1ed52e5607015a49e4d1b2d76bce8b2eb7d9213072dc6b359",
+      "expected_pages": 2,
+      "merge_partner": "ua2-unicode-001"
+    },
+    {
+      "id": "ua2-unicode-001",
+      "profile": "ua2",
+      "path": "ua2/ua2-unicode-001.pdf",
+      "source": "self-authored",
+      "license": "CC0-1.0",
+      "sha256": "69e976b655cc67216bd95b414c617339197258535ad16cd2aa19e92cb8f45898",
+      "expected_pages": 1,
+      "merge_partner": "ua2-heading-001"
+    }
+  ]
+}
