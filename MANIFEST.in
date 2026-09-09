@@ -1,0 +1,5 @@
+recursive-include corpus *.pdf *.json *.md *.txt
+recursive-include tests *.py
+recursive-include tools *.py
+recursive-include docs *.md
+include ATTRIBUTIONS.md CHANGELOG.md toolchain.lock.json action.yml

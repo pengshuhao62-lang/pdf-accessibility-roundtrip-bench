@@ -6,7 +6,7 @@ It starts with a PDF that passes a declared PDF/UA profile, performs a controlle
 
 This is an independent community benchmark. It is not affiliated with PDF Association, veraPDF, qpdf, Ghostscript, PyMuPDF, or any PDF vendor.
 
-## What v0.1.0 covers
+## What v0.2.0 covers
 
 - PDF/UA-1 and PDF/UA-2, declared per fixture;
 - qpdf, PyMuPDF, and Ghostscript;
@@ -15,6 +15,9 @@ This is an independent community benchmark. It is not affiliated with PDF Associ
 - Markdown and JSON reports;
 - an English CLI and macOS GitHub Actions workflows;
 - a manual review checklist kept separate from automated scores.
+- guarded comparisons of two tool-version runs, with new, persistent and no-longer-observed signals;
+- per-case failed-rule diagnostics and exact fixture reproduction commands;
+- an installable wheel that includes the licensed 20-fixture corpus.
 
 The benchmark measures machine-verifiable conformance and limited structure signals. It does not claim to replace a full human screen-reader review.
 
@@ -73,6 +76,31 @@ pdfua-bench summarize \
   --output reports/generated/run.md
 ```
 
+Compare two runs made with matching corpus and analysis context:
+
+```bash
+pdfua-bench compare-runs \
+  --before lab/before.json --after lab/after.json \
+  --output reports/generated/comparison.md
+```
+
+Reproduce one case:
+
+```bash
+pdfua-bench run --profiles ua1 --tools qpdf --operations resave \
+  --fixtures ua1-paragraph-001 --output lab/one-case.json
+```
+
+Comparison exits with `0` for no new signals, `1` for new signals, and `2` for
+incomparable or invalid evidence. `run` exits with `2` for incomplete measurement;
+observed PDF/UA violations in a successfully measured case are report data.
+See the [comparison protocol](docs/comparison-protocol.md) for exact guards.
+
+Every report output must have a new filename. Existing evidence is preserved.
+Outside a source checkout, commands use the corpus bundled in the installed
+wheel; `pdfua-bench corpus-path` prints its location. Use `--corpus` to explicitly
+select another manifest.
+
 The run creates disposable case directories under `lab/`. Original fixture files are never overwritten.
 
 An example of the initial sanitized run is available under [`reports/`](reports/README.md).
@@ -94,11 +122,11 @@ See [ATTRIBUTIONS.md](ATTRIBUTIONS.md) for the PDF/UA-1 Reference Suite license 
 
 ## Limitations
 
-- Local development and validation for v0.1.0 are macOS-only.
+- Local development and validation target macOS.
 - Windows and Linux are not used as local or CI validation environments in this release.
 - Tool behavior, PDF versions, validator versions, and fixture selection affect results.
 - Automated PDF/UA checks do not establish complete screen-reader usability.
-- Encrypted PDFs, digital signatures, arbitrary user documents, and automatic repair are outside the first release.
+- Encrypted PDFs, digital signatures, arbitrary user documents, and automatic repair are outside the benchmark's current scope.
 
 ## Development and tests
 
@@ -106,6 +134,7 @@ See [ATTRIBUTIONS.md](ATTRIBUTIONS.md) for the PDF/UA-1 Reference Suite license 
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m compileall -q src tests tools
 git diff --check
+python tools/verify_macos.py --output-dir lab/mac-acceptance
 ```
 
 GitHub Actions run the unit and simulation tests. A separate macOS workflow can run the full external-tool matrix manually and upload only sanitized reports.

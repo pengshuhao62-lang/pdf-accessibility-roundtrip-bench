@@ -22,17 +22,14 @@ def _resolve(value: Any) -> Any:
 
 def _count_alt_values(value: Any, seen: Set[Tuple[int, int]], budget: list[int]) -> int:
     if budget[0] <= 0:
-        return 0
+        raise ValueError("Structure traversal budget exhausted")
     budget[0] -= 1
     if isinstance(value, IndirectObject):
         key = (value.idnum, value.generation)
         if key in seen:
             return 0
         seen.add(key)
-        try:
-            value = value.get_object()
-        except Exception:
-            return 0
+        value = value.get_object()
     if isinstance(value, DictionaryObject):
         total = 1 if value.get("/Alt") is not None else 0
         for child in value.values():
@@ -70,11 +67,8 @@ def inspect_structure(path: Path) -> StructuralSnapshot:
         if struct_tree is not None:
             alt_count = _count_alt_values(struct_tree, set(), [MAX_OBJECTS])
 
-        try:
-            outlines = reader.outline
-            outline_count = _count_outlines(outlines)
-        except Exception:
-            outline_count = 0
+        outlines = reader.outline
+        outline_count = _count_outlines(outlines)
 
         info = reader.metadata
         title_present = bool(info and (info.title or info.get("/Title")))

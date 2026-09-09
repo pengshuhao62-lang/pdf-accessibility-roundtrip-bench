@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -35,13 +36,13 @@ class FixtureSpec:
     def validate(self) -> None:
         if self.profile not in PROFILES:
             raise ValueError("Unsupported PDF/UA profile")
-        if not self.fixture_id or not self.path:
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,119}", self.fixture_id) or not self.path:
             raise ValueError("Fixture ID and path are required")
         if self.expected_pages < 1:
             raise ValueError("Fixture page count must be positive")
         if not self.source or not self.license:
             raise ValueError("Fixture source and license are required")
-        if len(self.sha256) != 64:
+        if not re.fullmatch(r"[0-9a-fA-F]{64}", self.sha256):
             raise ValueError("Fixture SHA-256 must contain 64 hexadecimal characters")
 
     def to_dict(self) -> Dict[str, Any]:
@@ -148,6 +149,7 @@ class CaseResult:
     classification: str
     details: str = ""
     manual_review: bool = False
+    provenance: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.profile not in PROFILES:
@@ -177,6 +179,7 @@ class CaseResult:
             "classification": self.classification,
             "details": self.details,
             "manual_review": self.manual_review,
+            "provenance": self.provenance,
         }
 
 
@@ -198,7 +201,7 @@ class RunReport:
 
     def to_dict(self, include_raw_paths: bool = True) -> Dict[str, Any]:
         return {
-            "schema_version": "0.1",
+            "schema_version": "0.2",
             "run_id": self.run_id,
             "started_at": self.started_at,
             "ended_at": self.ended_at,

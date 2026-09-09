@@ -16,14 +16,15 @@ def classify_outcome(
     transformation_completed: bool,
     output_readable: bool,
 ) -> str:
-    if not baseline.readable or not baseline.compliant:
+    if not baseline.readable or not baseline.compliant or not before_structure.readable:
         return "baseline_invalid"
     if not transformation_completed:
         return "transformation_failed"
     output_items = list(outputs)
     if any(item.error for item in output_items):
         return "transformation_failed"
-    if not output_readable or not output_items or any(not item.readable for item in output_items):
+    after_structures = list(after_structures)
+    if not output_readable or not output_items or len(output_items) != len(after_structures) or any(not item.readable for item in output_items) or any(not item.readable for item in after_structures):
         return "output_unreadable"
     if any(not item.compliant for item in output_items):
         return "new_pdfua_violation"

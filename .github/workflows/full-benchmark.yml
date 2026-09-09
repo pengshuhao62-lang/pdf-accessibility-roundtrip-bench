@@ -8,7 +8,8 @@ permissions:
 
 jobs:
   benchmark:
-    runs-on: macos-latest
+    runs-on: macos-14
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -74,11 +75,23 @@ jobs:
             --input lab/runs/run.json \
             --format markdown \
             --output reports/generated/run.md
+          python -m pdfua_bench compare-runs \
+            --before lab/runs/run.json --after lab/runs/run.json \
+            --format json --output reports/generated/self-comparison.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          summary = json.loads(Path("reports/generated/self-comparison.json").read_text())["summary"]
+          assert summary["comparable"] == 180, summary
+          assert summary["not_comparable"] == 0, summary
+          PY
       - name: Upload sanitized summaries
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pdfua-bench-macos-summary
           path: |
             lab/runs/run.json
             reports/generated/run.md
+            reports/generated/self-comparison.json
           if-no-files-found: error

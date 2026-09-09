@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import sys
 import tempfile
@@ -23,6 +24,11 @@ from .validators import ValidationError, VeraPDFValidator
 from .structure import inspect_structure
 
 
+def default_corpus() -> Path:
+    local = Path("corpus/manifest.json")
+    return local if local.is_file() else Path(__file__).parent / "data/corpus/manifest.json"
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="pdfua-bench",
@@ -30,32 +36,40 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"pdfua-bench {__version__}")
     subparsers = parser.add_subparsers(dest="command")
+    subparsers.add_parser("corpus-path", help="print the default or bundled corpus manifest")
 
     preflight = subparsers.add_parser("preflight", help="check the local toolchain")
     preflight.add_argument("--json", action="store_true", help="print machine-readable output")
 
     verify = subparsers.add_parser("verify-corpus", help="verify corpus integrity and baselines")
-    verify.add_argument("--corpus", type=Path, default=Path("corpus/manifest.json"))
+    verify.add_argument("--corpus", type=Path, default=default_corpus())
     verify.add_argument("--output-dir", type=Path, default=Path("lab/corpus-verification"))
 
     run = subparsers.add_parser("run", help="run the selected roundtrip matrix")
-    run.add_argument("--corpus", type=Path, default=Path("corpus/manifest.json"))
+    run.add_argument("--corpus", type=Path, default=default_corpus())
     run.add_argument("--profiles", default="ua1,ua2")
     run.add_argument("--tools", default="qpdf,pymupdf,ghostscript")
     run.add_argument("--operations", default="merge,split,resave")
     run.add_argument("--output", type=Path, default=Path("lab/runs/run.json"))
+    run.add_argument("--fixtures", help="comma-separated fixture IDs for exact reproduction")
 
     summarize = subparsers.add_parser("summarize", help="render a JSON run report as Markdown")
     summarize.add_argument("--input", type=Path, required=True)
     summarize.add_argument("--format", choices=("markdown", "json"), default="markdown")
     summarize.add_argument("--output", type=Path)
 
+    compare = subparsers.add_parser("compare-runs", help="compare two recorded runs with context checks")
+    compare.add_argument("--before", type=Path, required=True)
+    compare.add_argument("--after", type=Path, required=True)
+    compare.add_argument("--format", choices=("markdown", "json"), default="markdown")
+    compare.add_argument("--output", type=Path)
+
     return parser
 
 
 def _split_values(value: str, allowed: Sequence[str], label: str) -> List[str]:
     values = [part.strip() for part in value.split(",") if part.strip()]
-    if not values or set(values) - set(allowed):
+    if not values or set(values) - set(allowed) or len(values) != len(set(values)):
         raise ValueError(f"Unsupported {label}; choose from {', '.join(allowed)}.")
     return values
 
@@ -65,7 +79,9 @@ def _write_output(content: str, path: Optional[Path]) -> None:
         sys.stdout.write(content)
         return
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as stream:
+        stream.write(content)
 
 
 def _tool_version(adapter) -> str:
@@ -146,11 +162,11 @@ def _preflight(toolchain: Toolchain) -> Tuple[bool, dict]:
 
 def _verify_corpus(corpus: Corpus, toolchain: Toolchain, output_dir: Path) -> List[str]:
     errors = verify_corpus_files(corpus)
+    if errors:
+        return errors
     output_dir.mkdir(parents=True, exist_ok=True)
     validator = VeraPDFValidator(toolchain)
     for fixture in corpus.fixtures:
-        if errors:
-            pass
         try:
             result = validator.validate(
                 corpus.file_path(fixture),
@@ -174,6 +190,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         if args.command is None:
             parser.print_help()
+            return 0
+        if args.command == "corpus-path":
+            print(default_corpus().resolve())
             return 0
         if args.command == "preflight":
             ok, payload = _preflight(toolchain)
@@ -202,6 +221,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             return 0
 
         if args.command == "run":
+            if args.output.exists() or args.output.is_symlink():
+                raise ValueError("Choose a new report path; existing outputs are never overwritten.")
             profiles = _split_values(args.profiles, PROFILES, "profiles")
             tools = _split_values(args.tools, TOOLS, "tools")
             operations = _split_values(args.operations, OPERATIONS, "operations")
@@ -213,6 +234,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 tools=tools,
                 operations=operations,
                 output_dir=args.output.parent,
+                fixture_ids=args.fixtures.split(",") if args.fixtures else None,
             )
             _write_output(json_text(report), args.output)
             print(
@@ -220,7 +242,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 f"report written to {args.output}.",
                 file=sys.stderr,
             )
-            return 0
+            incomplete = {"baseline_invalid", "tool_unavailable", "transformation_failed", "output_unreadable"}
+            return 2 if any(case.classification in incomplete for case in report.cases) else 0
+
+        if args.command == "compare-runs":
+            from .run_diff import compare_runs, comparison_markdown, comparison_exit_code
+            result = compare_runs(load_json(args.before), load_json(args.after))
+            content = json.dumps(result, ensure_ascii=False, indent=2) + "\n" if args.format == "json" else comparison_markdown(result)
+            _write_output(content, args.output)
+            return comparison_exit_code(result)
 
         if args.command == "summarize":
             payload = load_json(args.input)

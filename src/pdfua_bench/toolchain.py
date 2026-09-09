@@ -66,11 +66,11 @@ def resolve_toolchain(root: Optional[Path] = None) -> Toolchain:
     configured_root = os.environ.get("PDFUA_BENCH_TOOL_ROOT")
     tool_root = Path(configured_root).expanduser() if configured_root else (root or _discover_default_root())
     environment_root = tool_root / "env"
-    java_home = environment_root / "lib" / "jvm"
-    if not java_home.is_dir():
+    java_home = Path(os.environ["JAVA_HOME"]) if os.environ.get("JAVA_HOME") else environment_root / "lib" / "jvm"
+    if not (java_home / "bin/java").is_file():
         java_home = None
     return Toolchain(
-        root=tool_root,
+        root=tool_root if tool_root.is_dir() else Path.cwd(),
         vera_pdf=_executable(
             os.environ.get("PDFUA_BENCH_VERAPDF"),
             tool_root / "verapdf" / "verapdf",

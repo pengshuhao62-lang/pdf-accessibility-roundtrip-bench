@@ -10,6 +10,8 @@ import sys
 import tempfile
 import time
 import uuid
+from dataclasses import replace
+from importlib.metadata import version as package_version
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
@@ -28,6 +30,7 @@ from .models import (
     ValidationResult,
 )
 from .structure import inspect_structure
+from .process import run_command
 from .toolchain import Toolchain
 from .validators import ValidationError, VeraPDFValidator
 
@@ -41,7 +44,16 @@ def _safe_case_id(fixture: FixtureSpec, tool: str, operation: str) -> str:
 
 
 def environment_snapshot(toolchain: Toolchain) -> Dict[str, str]:
+    java = "unavailable"
+    if toolchain.java_home:
+        try:
+            result = run_command([str(toolchain.java_home / "bin/java"), "-version"], toolchain.root, toolchain.environment, 15)
+            if result.returncode == 0 and not result.timed_out:
+                java = " | ".join((result.stderr or result.stdout).strip().splitlines())
+        except OSError:
+            pass
     return {
+        "java": java,
         "os": platform.system(),
         "os_version": platform.mac_ver()[0] or platform.release(),
         "architecture": platform.machine(),
@@ -68,6 +80,8 @@ def _copy_fixture(corpus: Corpus, fixture: FixtureSpec, destination: Path) -> Pa
     source = corpus.file_path(fixture)
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source, destination)
+    if sha256_file(destination) != fixture.sha256:
+        raise CorpusError("A copied fixture no longer matches its declared hash.")
     return destination
 
 
@@ -215,6 +229,18 @@ def run_case(
                 classification="transformation_failed",
                 details="The corpus merge partner was missing.",
             )
+        try:
+            partner_baseline = _baseline_result(validator, corpus, partner, reports_dir, baseline_cache)
+        except ValidationError:
+            partner_baseline = ValidationResult(partner.profile, False, (), "unavailable", False)
+        if not partner_baseline.readable or not partner_baseline.compliant:
+            return CaseResult(
+                case_id, fixture.fixture_id, fixture.profile, adapter.name, operation,
+                baseline, TransformationResult(False, 0, error="merge partner baseline failed"),
+                (), before_structure, (),
+                "baseline_invalid" if partner_baseline.readable else "tool_unavailable",
+                details="The merge partner must have a valid baseline before transformation.",
+            )
         partner_copy = _copy_fixture(
             corpus, partner, input_dir / f"{partner.fixture_id}.pdf"
         )
@@ -328,16 +354,26 @@ def run_benchmark(
     tools: Sequence[str],
     operations: Sequence[str],
     output_dir: Path,
+    fixture_ids: Optional[Sequence[str]] = None,
 ) -> RunReport:
     invalid = set(profiles) - set(PROFILES)
     invalid |= set(tools) - {"qpdf", "pymupdf", "ghostscript"}
     invalid |= set(operations) - set(("merge", "split", "resave"))
     if invalid:
         raise CorpusError("The benchmark selection contains an unsupported value.")
+    if not profiles or not tools or not operations or any(len(set(items)) != len(items) for items in (profiles, tools, operations)):
+        raise CorpusError("Benchmark selections must be nonempty and unique.")
+    integrity_errors = verify_corpus_files(corpus)
+    if integrity_errors:
+        raise CorpusError("Corpus integrity checks failed: " + "; ".join(integrity_errors))
+    if fixture_ids and (set(fixture_ids) - set(corpus.by_id()) or len(set(fixture_ids)) != len(fixture_ids)):
+        raise CorpusError("Unknown or duplicate fixture selection.")
 
     from .adapters.factory import build_adapters
 
-    selected_fixtures = [fixture for fixture in corpus.fixtures if fixture.profile in profiles]
+    selected_fixtures = [fixture for fixture in corpus.fixtures if fixture.profile in profiles and (not fixture_ids or fixture.fixture_id in fixture_ids)]
+    if fixture_ids and len(selected_fixtures) != len(fixture_ids):
+        raise CorpusError("Selected fixture profiles do not match the profile selection.")
     if not selected_fixtures:
         raise CorpusError("The selected profiles contain no corpus fixtures.")
     adapters = build_adapters(toolchain)
@@ -347,12 +383,13 @@ def run_benchmark(
             tool_versions[tool_name] = adapters[tool_name].version()
         except AdapterError:
             tool_versions[tool_name] = "unavailable"
+    validator = VeraPDFValidator(toolchain)
     try:
-        validator_version = VeraPDFValidator(toolchain).version()
+        validator_version = validator.version()
     except ValidationError:
         validator_version = "unavailable"
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
-    run_dir = output_dir / run_id
+    run_dir = output_dir.resolve() / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     baseline_cache: Dict[str, ValidationResult] = {}
     cases: List[CaseResult] = []
@@ -373,11 +410,19 @@ def run_benchmark(
                     corpus,
                     fixture,
                     adapter,
-                    VeraPDFValidator(toolchain),
+                    validator,
                     operation,
                     case_dir,
                     baseline_cache,
                 )
+                inputs = [{"id": fixture.fixture_id, "sha256": fixture.sha256, "pages": fixture.expected_pages}]
+                if operation == "merge":
+                    partner = corpus.by_id()[fixture.merge_partner]
+                    inputs.append({"id": partner.fixture_id, "sha256": partner.sha256, "pages": partner.expected_pages})
+                case_result = replace(case_result, provenance={
+                    "inputs": inputs,
+                    "parameters": {"operation": operation, "adapter_defaults": "v1"},
+                })
                 cases.append(case_result)
                 print(
                     f"[{case_number}/{total_cases}] result={case_result.classification}",
@@ -397,7 +442,19 @@ def run_benchmark(
             "expected_case_count": len(selected_fixtures) * len(tools) * len(operations),
             "tool_versions": tool_versions,
             "verapdf_version": validator_version,
+            "comparison_protocol": "pdfua-roundtrip-v2",
+            "analyzer_sha256": analyzer_fingerprint(),
+            "python_packages": {name: package_version(name) for name in ("pypdf", "reportlab")},
         },
         cases=tuple(cases),
     )
     return report
+
+
+def analyzer_fingerprint() -> str:
+    root = Path(__file__).parent
+    digest = hashlib.sha256()
+    for name in ("runner.py", "compare.py", "structure.py", "validators.py", "adapters/qpdf_adapter.py", "adapters/pymupdf_adapter.py", "adapters/ghostscript_adapter.py"):
+        digest.update(name.encode())
+        digest.update((root / name).read_bytes().replace(b"\r\n", b"\n"))
+    return digest.hexdigest()

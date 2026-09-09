@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import html
+import shlex
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping
@@ -23,7 +25,7 @@ def json_text(report: RunReport, include_raw_paths: bool = False) -> str:
 
 
 def _cell(value: Any) -> str:
-    text = str(value).replace("|", "\\|").replace("\n", " ")
+    text = html.escape(str(value)).replace("`", "&#96;").replace("|", "\\|").replace("\n", " ").replace("\r", " ")
     return text
 
 
@@ -46,6 +48,42 @@ def _matrix_lines(cases: Iterable[Mapping[str, Any]]) -> List[str]:
         lines.append(
             f"| `{_cell(profile)}` | `{_cell(tool)}` | `{_cell(operation)}` | {total} | {passed} | {violations} | {other} |"
         )
+    return lines
+
+
+def _diagnostic_lines(cases):
+    from .run_diff import SAFE_ID
+    from .models import TOOLS, OPERATIONS, PROFILES
+    lines = ["", "## Diagnostics and reproduction", ""]
+    for case in cases:
+        if not isinstance(case, dict) or case.get("classification") == "passed":
+            continue
+        lines += [f"### {_cell(case.get('case_id', 'unknown'))}", "",
+                  f"Classification: {_cell(case.get('classification', 'unknown'))}"]
+        if case.get("details"):
+            lines += [_cell(case["details"])]
+        for index, validation in enumerate(case.get("output_validation", []), 1):
+            if not isinstance(validation, dict):
+                continue
+            for rule in validation.get("failed_rules", []):
+                lines += [f"- Output {index}: PDF/UA rule {_cell(rule)}"]
+            if validation.get("error"):
+                lines += [f"- Output {index}: {_cell(validation['error'])}"]
+        before, after = case.get("before_structure", {}), case.get("after_structure", [])
+        from .run_diff import FIELDS
+        if isinstance(before, dict) and isinstance(after, list) and after and all(isinstance(s, dict) and s.get("readable") for s in after):
+            for field in FIELDS:
+                values = [s.get(field) for s in after]
+                if type(before.get(field)) not in (int, bool) or any(type(v) != type(before[field]) for v in values):
+                    continue
+                observed = all(values) if type(before[field]) is bool else sum(values)
+                if observed != before[field]:
+                    lines += [f"- {_cell(field)}: {_cell(before[field])} → {_cell(observed)}"]
+        fixture = case.get("fixture_id", "")
+        if isinstance(fixture, str) and SAFE_ID.fullmatch(fixture) and case.get("tool") in TOOLS and case.get("operation") in OPERATIONS and case.get("profile") in PROFILES:
+            command = shlex.join(["pdfua-bench", "run", "--profiles", case["profile"], "--tools", case["tool"], "--operations", case["operation"], "--fixtures", fixture, "--output", "lab/reproduction.json"])
+            lines += ["", "```sh", command, "```", ""]
+    lines += ["Use the recorded tool versions and corpus. Output numbers refer to result order, not inferred PDF page/object locations.", ""]
     return lines
 
 
@@ -114,6 +152,7 @@ def markdown_text(report: RunReport) -> str:
             "",
         ]
     )
+    lines.extend(_diagnostic_lines([case.to_dict(include_raw_paths=False) for case in report.cases]))
     return "\n".join(lines)
 
 
@@ -183,6 +222,7 @@ def markdown_from_dict(payload: Mapping[str, Any]) -> str:
             "",
         ]
     )
+    lines.extend(_diagnostic_lines(cases))
     return "\n".join(lines)
 
 
