@@ -158,3 +158,27 @@ class RunComparisonTests(unittest.TestCase):
     def test_exhausted_structure_budget_is_not_zero(self):
         with self.assertRaises(ValueError):
             _count_alt_values({}, set(), [0])
+
+    def test_baseline_profile_and_rule_evidence_must_agree(self):
+        for key, value in [("profile", "ua2"), ("failed_rules", ["7.1-1"])]:
+            after = report()
+            after["cases"][0]["baseline"][key] = value
+            self.assertEqual(comparison_exit_code(compare_runs(report(), after)), 2)
+
+    def test_declared_input_pages_must_match_baseline(self):
+        after = report()
+        after["cases"][0]["provenance"]["inputs"][0]["pages"] = 2
+        self.assertEqual(comparison_exit_code(compare_runs(after, after)), 2)
+
+    def test_merge_partner_provenance_guarded(self):
+        before = report()
+        case = before["cases"][0]
+        case["operation"] = "merge"
+        case["provenance"]["parameters"]["operation"] = "merge"
+        case["provenance"]["inputs"].append(dict(id="partner", sha256="d"*64, pages=1))
+        case["before_structure"]["page_count"] = 2
+        case["after_structure"][0]["page_count"] = 2
+        self.assertEqual(comparison_exit_code(compare_runs(before, before)), 0)
+        after = copy.deepcopy(before)
+        after["cases"][0]["provenance"]["inputs"][1]["sha256"] = "e"*64
+        self.assertEqual(comparison_exit_code(compare_runs(before, after)), 2)

@@ -79,7 +79,7 @@ def _signals(case, validator_version):
     outputs = case.get("output_validation")
     before = case.get("before_structure")
     after = case.get("after_structure")
-    if not isinstance(base, dict) or base.get("compliant") is not True or base.get("readable") is not True or base.get("error") or base.get("validator_version") != validator_version:
+    if not isinstance(base, dict) or base.get("compliant") is not True or base.get("readable") is not True or base.get("error") or base.get("validator_version") != validator_version or base.get("profile") != case["profile"] or base.get("failed_rules") != []:
         return None
     if not isinstance(transformation, dict) or transformation.get("completed") is not True or transformation.get("error"):
         return None
@@ -92,6 +92,8 @@ def _signals(case, validator_version):
             return None
         if any(type(s[k]) is not bool for k in ("struct_tree_present", "marked_pdf", "document_language_present", "title_present")):
             return None
+    if before["page_count"] != sum(item["pages"] for item in case["provenance"]["inputs"]):
+        return None
     signals = set()
     for index, result in enumerate(outputs, 1):
         if not isinstance(result, dict) or result.get("readable") is not True or result.get("error") or result.get("validator_version") != validator_version or result.get("profile") != case["profile"] or type(result.get("compliant")) is not bool:
@@ -119,7 +121,7 @@ def compare_runs(before, after):
         a, b = left.get(key), right.get(key)
         row = dict(zip(("fixture", "profile", "tool", "operation"), key))
         row.update(new=[], persistent=[], no_longer_observed=[], status="not_comparable", reason="")
-        row["reproduce"] = shlex.join(["pdfua-bench", "run", "--corpus", "corpus/manifest.json", "--profiles", key[1], "--tools", key[2], "--operations", key[3], "--fixtures", key[0], "--output", "lab/reproduction.json"])
+        row["reproduce"] = shlex.join(["pdfua-bench", "run", "--profiles", key[1], "--tools", key[2], "--operations", key[3], "--fixtures", key[0], "--output", "lab/reproduction.json"])
         if a is None or b is None:
             row["reason"] = "Case missing from one run."
         else:
