@@ -69,7 +69,9 @@ def _case_report(report, case_id):
         raise ValueError("Case identity does not match its fixture and operation.")
     if any(v.get("diagnostics_complete") is not True for v in case["output_validation"]):
         raise ValueError("Complete diagnostic coverage is required for a reproduction package.")
-    result = copy.deepcopy(report)
+    # A full matrix can contain hundreds of thousands of checks. Copy only the
+    # selected case, not every PDF's diagnostics, when exporting one reproduction.
+    result = copy.deepcopy({key: value for key, value in report.items() if key != "cases"})
     result["cases"] = [copy.deepcopy(case)]
     result["summary"] = {case["classification"]: 1, "total": 1}
     result["configuration"].update(expected_case_count=1, fixture_count=1,
