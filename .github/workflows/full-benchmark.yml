@@ -53,24 +53,29 @@ jobs:
             "$RUNNER_TEMP/verapdf-install.xml"
       - name: Install project dependencies
         run: python -m pip install --upgrade pip && python -m pip install -e .
+      - name: Build checksum-pinned full-diagnostic veraPDF overlay
+        run: |
+          python tools/build_verapdf_full_checks.py \
+            --verapdf "$RUNNER_TEMP/verapdf/verapdf" \
+            --output-dir "$RUNNER_TEMP/verapdf-full-checks"
       - name: Run preflight
         env:
-          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf/verapdf
+          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf-full-checks/verapdf
         run: python -m pdfua_bench preflight --json
       - name: Verify corpus
         env:
-          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf/verapdf
+          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf-full-checks/verapdf
         run: python -m pdfua_bench verify-corpus
       - name: Run full benchmark matrix
         uses: ./
         env:
-          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf/verapdf
+          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf-full-checks/verapdf
         with:
           mode: run
           output: lab/runs/run.json
       - name: Check complete matrix and single-case reproduction
         env:
-          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf/verapdf
+          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf-full-checks/verapdf
         run: |
           mkdir -p reports/generated
           python -m pdfua_bench summarize \
@@ -87,7 +92,8 @@ jobs:
           assert summary["comparable"] == 180, summary
           assert summary["not_comparable"] == 0, summary
           PY
-          python tools/verify_v3_evidence.py --input lab/runs/run.json --output-dir lab/bundle-check
+          python tools/verify_v3_evidence.py --input lab/runs/run.json --output-dir lab/bundle-check \
+            --official-verapdf "$RUNNER_TEMP/verapdf/verapdf"
       - name: Upload sanitized summaries
         if: always()
         uses: actions/upload-artifact@v4
