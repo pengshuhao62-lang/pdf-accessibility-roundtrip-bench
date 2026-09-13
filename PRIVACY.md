@@ -16,12 +16,14 @@ PDF Accessibility Roundtrip Bench is designed to run locally or in the user's ow
 
 The public CI workflow runs tests and simulated adapters. The optional full benchmark workflow runs on macOS, uses public fixtures, and uploads sanitized Markdown/JSON summaries only. It does not upload raw validator logs or temporary case directories.
 
-## Third-party tools
+## Reproduction bundles
 
 V3 `export-case --include-pdfs` creates a local ZIP containing original and output
 PDF content plus source/license metadata. Review each document's sharing rights
 before publishing a bundle. Diagnostic reports retain sanitized model paths and
 context hashes, not raw error messages or parenthesized font names. Raw validator
 reports remain local. See [bundle handling](docs/reproduction-bundles.md).
+
+## Third-party tools
 
 veraPDF, qpdf, Ghostscript, PyMuPDF, pypdf, and reportlab are run as local dependencies. Their own licenses and behavior remain separate from this project.

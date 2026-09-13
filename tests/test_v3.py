@@ -17,6 +17,8 @@ from pdfua_bench.corpus import load_corpus
 from pdfua_bench.diagnostics import extract_diagnostics, safe_context
 from pdfua_bench.run_diff import compare_runs, comparison_exit_code
 from pdfua_bench.toolchain import resolve_toolchain
+from pdfua_bench.process import ProcessResult
+from pdfua_bench.validators import VeraPDFValidator, ValidationError
 from test_run_diff import report
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -72,6 +74,20 @@ class DiagnosticTests(unittest.TestCase):
         self.assertNotIn("private", result)
         self.assertNotIn("secret", result)
         self.assertNotIn("Secret", result)
+
+    def test_validator_rejects_duplicate_jobs_and_requests_all_checks(self):
+        from types import SimpleNamespace
+        chain = SimpleNamespace(vera_pdf=Path("verapdf"), root=ROOT, environment={})
+        validator = VeraPDFValidator(chain)
+        job = dict(itemDetails=dict(name=str(self.path)), validationResult=[validation(self.context)])
+        data = json.dumps(dict(report=dict(jobs=[job, job])))
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("pdfua_bench.validators.run_command", return_value=ProcessResult(1, data, "")) as process:
+                with self.assertRaisesRegex(ValidationError, "duplicate"):
+                    validator.validate(self.path, "ua1", Path(directory)/"report.json", Path(directory)/"error.log")
+                argv = process.call_args[0][0]
+                for flag in ("--maxfailures", "--maxfailuresdisplayed"):
+                    self.assertEqual(argv[argv.index(flag)+1], "-1")
 
 
 class BundleTests(unittest.TestCase):
@@ -156,6 +172,39 @@ class BundleTests(unittest.TestCase):
         self.case["output_validation"][0]["diagnostics_complete"] = False
         with self.assertRaises(ValueError):
             self.export()
+
+    def test_merge_partner_is_packaged_and_hash_checked(self):
+        partner = self.corpus.by_id()[self.fixture.merge_partner]
+        self.case["operation"] = "merge"
+        self.case["provenance"]["parameters"]["operation"] = "merge"
+        self.case["provenance"]["inputs"].append(dict(id=partner.fixture_id, sha256=partner.sha256, pages=partner.expected_pages))
+        self.case["before_structure"]["page_count"] += partner.expected_pages
+        self.case["after_structure"][0]["page_count"] += partner.expected_pages
+        self.case["case_id"] = self.fixture.fixture_id + "-qpdf-merge"
+        new_dir = self.run_dir / "cases" / self.case["case_id"]
+        self.case_dir.rename(new_dir)
+        self.case_dir = new_dir
+        self.export()
+        _, _, members = verify_bundle(self.zip)
+        self.assertEqual(hashlib.sha256(members["corpus/pdfs/input-2.pdf"]).hexdigest(), partner.sha256)
+        fixtures = json.loads(members["corpus/manifest.json"])["fixtures"]
+        self.assertEqual(fixtures[0]["merge_partner"], partner.fixture_id)
+        self.assertEqual(fixtures[1]["merge_partner"], self.fixture.fixture_id)
+
+    def test_export_size_budget_is_enforced_before_output(self):
+        with patch("pdfua_bench.bundles.MAX_BYTES", 10):
+            with self.assertRaises(ValueError):
+                self.export()
+        self.assertFalse(self.zip.exists())
+
+    def test_missing_license_is_rejected_even_with_rehashed_manifest(self):
+        self.export()
+        _, _, members = verify_bundle(self.zip)
+        doc = json.loads(members["corpus/manifest.json"])
+        doc["fixtures"][0]["license"] = ""
+        target = self.rewrite({"corpus/manifest.json": json.dumps(doc).encode()}, rehash=True)
+        with self.assertRaisesRegex(ValueError, "licensing"):
+            verify_bundle(target)
 
     def test_unsafe_output_paths_rejected(self):
         self.case["transformation"]["output_files"] = ["../../private.pdf"]
