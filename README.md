@@ -6,7 +6,7 @@ It starts with a PDF that passes a declared PDF/UA profile, performs a controlle
 
 This is an independent community benchmark. It is not affiliated with PDF Association, veraPDF, qpdf, Ghostscript, PyMuPDF, or any PDF vendor.
 
-## What v0.2.0 covers
+## What v0.3.0 covers
 
 - PDF/UA-1 and PDF/UA-2, declared per fixture;
 - qpdf, PyMuPDF, and Ghostscript;
@@ -18,6 +18,12 @@ This is an independent community benchmark. It is not affiliated with PDF Associ
 - guarded comparisons of two tool-version runs, with new, persistent and no-longer-observed signals;
 - per-case failed-rule diagnostics and exact fixture reproduction commands;
 - an installable wheel that includes the licensed 20-fixture corpus.
+- failed-check evidence with verified output-page anchors and explicit unresolved locations;
+- integrity-checked single-case PDF bundles and strictly version-matched replay;
+- isolated GitHub Action run/compare modes for reusable regression gates.
+
+See [v3 diagnostics and reproduction](docs/reproduction-bundles.md) and
+[GitHub Action examples](docs/github-action.md).
 
 The benchmark measures machine-verifiable conformance and limited structure signals. It does not claim to replace a full human screen-reader review.
 

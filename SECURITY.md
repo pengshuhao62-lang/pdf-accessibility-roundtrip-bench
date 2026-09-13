@@ -17,4 +17,10 @@ The project deliberately does not ship exploit payloads or attempt to repair arb
 
 ## Reporting a vulnerability
 
+V3 bundle verification accepts a fixed data layout, validates member hashes and
+provenance, and rejects traversal, symlinks, duplicates and oversized archives.
+Hashes are not signatures. Reproduction invokes only built-in adapters after
+strict environment checks. Treat PDFs from untrusted publishers as untrusted
+parser input and use a disposable environment; verification is not a malware scan.
+
 Do not include private PDFs, credentials, API keys, personal paths, or full raw logs in a public issue. Report a minimal synthetic reproduction and the affected version through GitHub's private security reporting channel when available.

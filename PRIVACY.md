@@ -18,4 +18,10 @@ The public CI workflow runs tests and simulated adapters. The optional full benc
 
 ## Third-party tools
 
+V3 `export-case --include-pdfs` creates a local ZIP containing original and output
+PDF content plus source/license metadata. Review each document's sharing rights
+before publishing a bundle. Diagnostic reports retain sanitized model paths and
+context hashes, not raw error messages or parenthesized font names. Raw validator
+reports remain local. See [bundle handling](docs/reproduction-bundles.md).
+
 veraPDF, qpdf, Ghostscript, PyMuPDF, pypdf, and reportlab are run as local dependencies. Their own licenses and behavior remain separate from this project.

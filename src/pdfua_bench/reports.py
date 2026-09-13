@@ -67,6 +67,16 @@ def _diagnostic_lines(cases):
                 continue
             for rule in validation.get("failed_rules", []):
                 lines += [f"- Output {index}: PDF/UA rule {_cell(rule)}"]
+            checks = validation.get("failed_checks", [])
+            if "diagnostics_complete" in validation:
+                lines += [f"- Diagnostic coverage: {'complete' if validation['diagnostics_complete'] else 'incomplete'}; {len(checks)} recorded failed checks."]
+            for check in checks[:30]:
+                page = check.get("page")
+                location = f"page {page}" if page else "page unresolved"
+                refs = ", ".join(f"{r['number']} {r['generation']} obj" for r in check.get("object_references", []))
+                lines += [f"- {_cell(check.get('rule_id'))}: output {index}, {location}; objects {_cell(refs or 'unresolved')}; {_cell(check.get('report_pointer'))}"]
+            if len(checks) > 30:
+                lines += [f"- Markdown preview shows 30/{len(checks)} checks. Complete diagnostics remain in JSON."]
             if validation.get("error"):
                 lines += [f"- Output {index}: {_cell(validation['error'])}"]
         before, after = case.get("before_structure", {}), case.get("after_structure", [])

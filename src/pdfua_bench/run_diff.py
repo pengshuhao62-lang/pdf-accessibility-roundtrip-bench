@@ -36,12 +36,28 @@ def _context(report, case):
     config = report.get("configuration", {})
     env = report.get("environment", {})
     provenance = case.get("provenance", {})
-    if report.get("schema_version") != "0.2" or not isinstance(config, dict) or not isinstance(env, dict) or not isinstance(provenance, dict):
+    if report.get("schema_version") not in ("0.2", "0.3") or not isinstance(config, dict) or not isinstance(env, dict) or not isinstance(provenance, dict):
         return None
     if type(config.get("expected_case_count")) is not int or config["expected_case_count"] != len(report["cases"]):
         return None
-    if config.get("comparison_protocol") != "pdfua-roundtrip-v2" or not HASH.fullmatch(str(config.get("analyzer_sha256", ""))):
+    expected_protocol = "pdfua-roundtrip-v3" if report["schema_version"] == "0.3" else "pdfua-roundtrip-v2"
+    if config.get("comparison_protocol") != expected_protocol or not HASH.fullmatch(str(config.get("analyzer_sha256", ""))):
         return None
+    if report["schema_version"] == "0.3":
+        outputs = case.get("output_validation")
+        if not isinstance(outputs, list) or not outputs:
+            return None
+        for output in outputs:
+            if not isinstance(output, dict) or output.get("diagnostics_complete") is not True:
+                return None
+            checks = output.get("failed_checks")
+            if not isinstance(checks, list) or any(not isinstance(c, dict) for c in checks):
+                return None
+            rules = output.get("failed_rules")
+            if not isinstance(rules, list) or any(not isinstance(r, str) for r in rules):
+                return None
+            if any(not isinstance(c.get("rule_id"), str) for c in checks) or {c["rule_id"] for c in checks} != set(rules):
+                return None
     inputs = provenance.get("inputs")
     expected = 2 if case["operation"] == "merge" else 1
     if not isinstance(inputs, list) or len(inputs) != expected:
@@ -66,7 +82,7 @@ def _context(report, case):
     validator = config.get("verapdf_version")
     if not isinstance(validator, str) or validator in ("", "unknown", "unavailable"):
         return None
-    return {"inputs": inputs, "parameters": parameters, "validator": validator,
+    return {"protocol": expected_protocol, "inputs": inputs, "parameters": parameters, "validator": validator,
             "environment": {k: env[k] for k in required_env}, "packages": packages,
             "analyzer": config["analyzer_sha256"]}
 

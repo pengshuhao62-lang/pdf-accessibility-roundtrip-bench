@@ -422,6 +422,9 @@ def run_benchmark(
                 case_result = replace(case_result, provenance={
                     "inputs": inputs,
                     "parameters": {"operation": operation, "adapter_defaults": "v1"},
+                    "outputs": [{"path": name, "sha256": sha256_file(case_dir / name)}
+                                for name in case_result.transformation.output_files
+                                if name != "<outside-workdir>" and (case_dir / name).is_file()],
                 })
                 cases.append(case_result)
                 print(
@@ -442,7 +445,7 @@ def run_benchmark(
             "expected_case_count": len(selected_fixtures) * len(tools) * len(operations),
             "tool_versions": tool_versions,
             "verapdf_version": validator_version,
-            "comparison_protocol": "pdfua-roundtrip-v2",
+            "comparison_protocol": "pdfua-roundtrip-v3",
             "analyzer_sha256": analyzer_fingerprint(),
             "python_packages": {name: package_version(name) for name in ("pypdf", "reportlab")},
         },
@@ -454,7 +457,7 @@ def run_benchmark(
 def analyzer_fingerprint() -> str:
     root = Path(__file__).parent
     digest = hashlib.sha256()
-    for name in ("runner.py", "compare.py", "structure.py", "validators.py", "adapters/qpdf_adapter.py", "adapters/pymupdf_adapter.py", "adapters/ghostscript_adapter.py"):
+    for name in ("runner.py", "compare.py", "structure.py", "validators.py", "diagnostics.py", "models.py", "process.py", "adapters/qpdf_adapter.py", "adapters/pymupdf_adapter.py", "adapters/ghostscript_adapter.py"):
         digest.update(name.encode())
         digest.update((root / name).read_bytes().replace(b"\r\n", b"\n"))
     return digest.hexdigest()

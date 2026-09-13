@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 from .models import PROFILES, ValidationResult
 from .process import ProcessResult, run_command
 from .toolchain import Toolchain
+from .diagnostics import extract_diagnostics
 
 
 class ValidationError(RuntimeError):
@@ -197,6 +198,8 @@ class VeraPDFValidator:
                 "json",
                 "--maxfailuresdisplayed",
                 "-1",
+                "--maxfailures",
+                "-1",
                 *[str(pdf_path) for pdf_path in pdf_paths],
             ],
             cwd=self.toolchain.root,
@@ -228,6 +231,8 @@ class VeraPDFValidator:
             validation = job.get("validationResult")
             if isinstance(name, str) and isinstance(validation, list) and validation:
                 if isinstance(validation[0], dict):
+                    if name in jobs_by_name or len(validation) != 1:
+                        raise ValidationError("veraPDF returned duplicate or ambiguous validation jobs.")
                     jobs_by_name[name] = validation[0]
 
         version = self.version()
@@ -245,6 +250,7 @@ class VeraPDFValidator:
             compliant = validation.get("compliant")
             if not isinstance(compliant, bool):
                 raise ValidationError("veraPDF JSON did not contain a compliance result.")
+            diagnostics, complete = extract_diagnostics(validation, pdf_path)
             results.append(
                 ValidationResult(
                     profile=profile,
@@ -253,6 +259,8 @@ class VeraPDFValidator:
                     validator_version=version,
                     readable=True,
                     raw_report_path=report_path.name,
+                    failed_checks=diagnostics,
+                    diagnostics_complete=complete,
                 )
             )
         return results

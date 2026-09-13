@@ -64,6 +64,19 @@ def _build_parser() -> argparse.ArgumentParser:
     compare.add_argument("--format", choices=("markdown", "json"), default="markdown")
     compare.add_argument("--output", type=Path)
 
+    export = subparsers.add_parser("export-case", help="package one measured case, including PDF content")
+    export.add_argument("--input", type=Path, required=True)
+    export.add_argument("--case", required=True)
+    export.add_argument("--corpus", type=Path, default=default_corpus())
+    export.add_argument("--run-dir", type=Path, required=True)
+    export.add_argument("--output", type=Path, required=True)
+    export.add_argument("--include-pdfs", action="store_true", help="confirm permission to package document content")
+    verify_bundle = subparsers.add_parser("verify-bundle", help="verify bundle integrity without executing PDF tools")
+    verify_bundle.add_argument("--bundle", type=Path, required=True)
+    reproduce = subparsers.add_parser("reproduce", help="rerun one bundle with strictly matching versions and environment")
+    reproduce.add_argument("--bundle", type=Path, required=True)
+    reproduce.add_argument("--output", type=Path, required=True)
+
     return parser
 
 
@@ -243,7 +256,25 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 file=sys.stderr,
             )
             incomplete = {"baseline_invalid", "tool_unavailable", "transformation_failed", "output_unreadable"}
-            return 2 if any(case.classification in incomplete for case in report.cases) else 0
+            return 2 if any(case.classification in incomplete or any(not v.diagnostics_complete for v in case.output_validation) for case in report.cases) else 0
+
+        if args.command == "export-case":
+            from .bundles import export_case
+            manifest = export_case(load_json(args.input), args.case, load_corpus(args.corpus),
+                                   args.run_dir, args.output, args.include_pdfs)
+            print(f"Exported {manifest['case_id']} to {args.output}; review PDF content before sharing.")
+            return 0
+        if args.command == "verify-bundle":
+            from .bundles import verify_bundle
+            manifest, _, _ = verify_bundle(args.bundle)
+            print(f"Bundle integrity verified: {manifest['case_id']} ({len(manifest['members'])} members).")
+            return 0
+        if args.command == "reproduce":
+            from .bundles import reproduce_bundle
+            report, code = reproduce_bundle(args.bundle, toolchain, args.output)
+            _write_output(json_text(report), args.output)
+            print(f"Reproduction report: {args.output}; comparison exit code: {code}.")
+            return code
 
         if args.command == "compare-runs":
             from .run_diff import compare_runs, comparison_markdown, comparison_exit_code

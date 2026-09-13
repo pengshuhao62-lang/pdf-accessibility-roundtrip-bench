@@ -62,14 +62,16 @@ jobs:
           PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf/verapdf
         run: python -m pdfua_bench verify-corpus
       - name: Run full benchmark matrix
+        uses: ./
+        env:
+          PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf/verapdf
+        with:
+          mode: run
+          output: lab/runs/run.json
+      - name: Check complete matrix and single-case reproduction
         env:
           PDFUA_BENCH_VERAPDF: ${{ runner.temp }}/verapdf/verapdf
         run: |
-          python -m pdfua_bench run \
-            --profiles ua1,ua2 \
-            --tools qpdf,pymupdf,ghostscript \
-            --operations merge,split,resave \
-            --output lab/runs/run.json
           mkdir -p reports/generated
           python -m pdfua_bench summarize \
             --input lab/runs/run.json \
@@ -85,6 +87,7 @@ jobs:
           assert summary["comparable"] == 180, summary
           assert summary["not_comparable"] == 0, summary
           PY
+          python tools/verify_v3_evidence.py --input lab/runs/run.json --output-dir lab/bundle-check
       - name: Upload sanitized summaries
         if: always()
         uses: actions/upload-artifact@v4
@@ -94,4 +97,5 @@ jobs:
             lab/runs/run.json
             reports/generated/run.md
             reports/generated/self-comparison.json
+            lab/bundle-check/acceptance.json
           if-no-files-found: error

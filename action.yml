@@ -1,7 +1,20 @@
 name: PDF Accessibility Roundtrip Bench
-description: Run a machine-verifiable PDF/UA roundtrip benchmark.
+description: Run PDF/UA measurements or compare recorded runs with a regression gate.
 author: Shuhao Peng
 inputs:
+  mode:
+    description: run or compare. Compare needs no external PDF toolchain.
+    required: false
+    default: run
+  before:
+    description: Reference JSON report for compare mode.
+    required: false
+  after:
+    description: Candidate JSON report for compare mode.
+    required: false
+  fixtures:
+    description: Optional comma-separated exact fixture IDs for run mode.
+    required: false
   profiles:
     description: Comma-separated profiles to test.
     required: false
@@ -15,11 +28,10 @@ inputs:
     required: false
     default: merge,split,resave
   corpus:
-    description: Path to the corpus manifest.
+    description: Path to a corpus manifest. Empty uses this action's bundled corpus.
     required: false
-    default: corpus/manifest.json
   output:
-    description: JSON report path.
+    description: Fresh JSON output path for either mode. Existing files are preserved.
     required: false
     default: lab/runs/run.json
 runs:
@@ -28,6 +40,10 @@ runs:
     - name: Run PDF Accessibility Roundtrip Bench
       shell: bash
       env:
+        PDFUA_BENCH_MODE: ${{ inputs.mode }}
+        PDFUA_BENCH_BEFORE: ${{ inputs.before }}
+        PDFUA_BENCH_AFTER: ${{ inputs.after }}
+        PDFUA_BENCH_FIXTURES: ${{ inputs.fixtures }}
         PDFUA_BENCH_PROFILES: ${{ inputs.profiles }}
         PDFUA_BENCH_TOOLS: ${{ inputs.tools }}
         PDFUA_BENCH_OPERATIONS: ${{ inputs.operations }}
@@ -35,10 +51,22 @@ runs:
         PDFUA_BENCH_OUTPUT: ${{ inputs.output }}
       run: |
         set -euo pipefail
-        export PYTHONPATH="${GITHUB_ACTION_PATH}/src${PYTHONPATH:+:${PYTHONPATH}}"
-        python3 -m pdfua_bench run \
-          --profiles "${PDFUA_BENCH_PROFILES}" \
-          --tools "${PDFUA_BENCH_TOOLS}" \
-          --operations "${PDFUA_BENCH_OPERATIONS}" \
-          --corpus "${PDFUA_BENCH_CORPUS}" \
-          --output "${PDFUA_BENCH_OUTPUT}"
+        case "$PDFUA_BENCH_MODE" in
+          run|compare) ;;
+          *) echo 'mode must be run or compare' >&2; exit 2 ;;
+        esac
+        action_env="$(mktemp -d "${RUNNER_TEMP}/pdfua-action.XXXXXX")"
+        python3 -m venv "$action_env"
+        "$action_env/bin/python" -m pip install --disable-pip-version-check "$GITHUB_ACTION_PATH"
+        if [[ "$PDFUA_BENCH_MODE" == compare ]]; then
+          "$action_env/bin/python" -I -m pdfua_bench compare-runs \
+            --before "$PDFUA_BENCH_BEFORE" --after "$PDFUA_BENCH_AFTER" \
+            --format json --output "$PDFUA_BENCH_OUTPUT"
+        else
+          corpus_path="${PDFUA_BENCH_CORPUS:-$GITHUB_ACTION_PATH/corpus/manifest.json}"
+          args=(run --profiles "$PDFUA_BENCH_PROFILES" --tools "$PDFUA_BENCH_TOOLS"
+                --operations "$PDFUA_BENCH_OPERATIONS" --corpus "$corpus_path"
+                --output "$PDFUA_BENCH_OUTPUT")
+          if [[ -n "$PDFUA_BENCH_FIXTURES" ]]; then args+=(--fixtures "$PDFUA_BENCH_FIXTURES"); fi
+          "$action_env/bin/python" -I -m pdfua_bench "${args[@]}"
+        fi

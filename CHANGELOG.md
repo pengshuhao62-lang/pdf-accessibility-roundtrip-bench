@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.0] - 2026-09-13
+
+- Capture all failed checks with rule pointers, sanitized model paths and PDF object references.
+- Verify output-page anchors against actual page objects; leave unverified locations unresolved.
+- Reject incomplete diagnostic coverage in v3 comparisons and run exit status.
+- Record output hashes and export bounded, integrity-checked single-case PDF bundles.
+- Replay bundles only with matching analyzer, environment, dependencies and processing tool.
+- Add isolated GitHub Action run/compare modes, bundled-corpus defaults and CI integration examples.
+- Preserve all 20 fixtures, the complete 180-case matrix and v2 comparison support.
+
 ## [0.2.0] - 2026-09-09
 
 - Added provenance-guarded comparisons of two recorded runs and explicit CLI exit codes.

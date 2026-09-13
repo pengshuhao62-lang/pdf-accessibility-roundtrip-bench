@@ -1,4 +1,4 @@
-# Run comparison protocol v2
+# Run comparison protocols v2 and v3
 
 `compare-runs` compares recorded evidence for the same fixture, profile, tool and
 operation. Reports are parsed as data; reproduction commands are generated from
@@ -6,7 +6,10 @@ validated identifiers and never executed by the comparison command.
 
 ## Required context
 
-Both reports must use schema `0.2` and `pdfua-roundtrip-v2`. Comparison requires:
+Both reports must use the same protocol: schema `0.2` with `pdfua-roundtrip-v2`,
+or schema `0.3` with `pdfua-roundtrip-v3`. Cross-protocol runs are incomparable.
+V3 also requires complete failed-check coverage, consistent with failed-rule IDs.
+Comparison requires:
 
 - identical input IDs, SHA-256 checksums and declared page counts, including the
   second input of a merge;

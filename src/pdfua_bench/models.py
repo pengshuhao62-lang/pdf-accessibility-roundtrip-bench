@@ -68,6 +68,9 @@ class ValidationResult:
     raw_report_path: Optional[str] = None
     error: Optional[str] = None
 
+    failed_checks: Tuple[Dict[str, Any], ...] = ()
+    diagnostics_complete: bool = False
+
     def to_dict(self, include_raw_path: bool = True) -> Dict[str, Any]:
         result: Dict[str, Any] = {
             "profile": self.profile,
@@ -75,6 +78,8 @@ class ValidationResult:
             "failed_rules": list(self.failed_rules),
             "validator_version": self.validator_version,
             "readable": self.readable,
+            "failed_checks": list(self.failed_checks),
+            "diagnostics_complete": self.diagnostics_complete,
         }
         if include_raw_path and self.raw_report_path:
             result["raw_report_path"] = self.raw_report_path
@@ -201,7 +206,7 @@ class RunReport:
 
     def to_dict(self, include_raw_paths: bool = True) -> Dict[str, Any]:
         return {
-            "schema_version": "0.2",
+            "schema_version": "0.3",
             "run_id": self.run_id,
             "started_at": self.started_at,
             "ended_at": self.ended_at,
