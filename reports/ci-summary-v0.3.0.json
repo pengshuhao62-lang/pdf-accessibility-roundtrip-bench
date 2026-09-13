@@ -1,0 +1,84 @@
+{
+  "run_id": "20260913T135905Z-d38c7fb1",
+  "environment": {
+    "architecture": "arm64",
+    "ghostscript": "available",
+    "java": "openjdk version \"17.0.20.1\" 2026-08-18 | OpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1) | OpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)",
+    "os": "Darwin",
+    "os_version": "14.8.9",
+    "python": "3.9.13",
+    "qpdf": "available",
+    "tool_root": "isolated-external-ssd-toolchain",
+    "verapdf": "available"
+  },
+  "configuration": {
+    "analyzer_sha256": "d1dd1d681c23f3303361d178cbb5d5d14947d6ea85e75fad65c2b852061d4ad9",
+    "comparison_protocol": "pdfua-roundtrip-v3",
+    "expected_case_count": 180,
+    "fixture_count": 20,
+    "operations": [
+      "merge",
+      "split",
+      "resave"
+    ],
+    "profiles": [
+      "ua1",
+      "ua2"
+    ],
+    "python_packages": {
+      "pypdf": "6.16.2",
+      "reportlab": "5.0.1"
+    },
+    "tool_versions": {
+      "ghostscript": "10.07.1",
+      "pymupdf": "1.26.5",
+      "qpdf": "qpdf version 12.4.1"
+    },
+    "tools": [
+      "qpdf",
+      "pymupdf",
+      "ghostscript"
+    ],
+    "verapdf_version": "veraPDF 1.30.2 + pdfua-full-checks-1"
+  },
+  "summary": {
+    "baseline_invalid": 0,
+    "manual_review": 0,
+    "new_pdfua_violation": 140,
+    "output_unreadable": 0,
+    "passed": 40,
+    "structure_signal_changed": 0,
+    "tool_unavailable": 0,
+    "total": 180,
+    "transformation_failed": 0
+  },
+  "schema_version": "0.3-evidence-summary",
+  "acceptance": {
+    "cases": 180,
+    "diagnostic_checks": 335159,
+    "verified_page_checks": 330557,
+    "unresolved_checks": 4602,
+    "replayed_cases": [
+      "ua1-heading-001-qpdf-merge",
+      "ua1-heading-001-qpdf-split",
+      "ua1-heading-001-qpdf-resave"
+    ],
+    "self_comparison": {
+      "cases": 180,
+      "comparable": 180,
+      "not_comparable": 0,
+      "new": 0,
+      "persistent": 5408,
+      "no_longer_observed": 0
+    },
+    "official_overlay_invariance": {
+      "case": "ua1-ref-2-08-bookchapter-ghostscript-merge",
+      "compliant_unchanged": true,
+      "failed_rules_unchanged": true,
+      "failed_check_count": 21381,
+      "official_recorded_checks": 10005,
+      "overlay_recorded_checks": 21381
+    }
+  },
+  "note": "Independent CI measurement; different runtime context from the local run."
+}

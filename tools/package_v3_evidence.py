@@ -17,6 +17,8 @@ def main():
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--acceptance-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--ci-input", type=Path)
+    parser.add_argument("--ci-acceptance", type=Path)
     args = parser.parse_args()
     report = load_json(args.input)
     comparison = compare_runs(report, report)
@@ -39,6 +41,20 @@ def main():
     assert all("-ref-" not in i["id"] for i in evidence["cases"][0]["provenance"]["inputs"]), "Publish the self-authored sample only."
     with bundle.open("rb") as source, (args.output_dir / "pdfua-bench-v0.3.0-example-case.zip").open("xb") as target:
         shutil.copyfileobj(source, target)
+    if bool(args.ci_input) != bool(args.ci_acceptance):
+        raise ValueError("Supply both CI evidence paths.")
+    if args.ci_input:
+        ci = load_json(args.ci_input)
+        diff = compare_runs(ci, ci)
+        assert comparison_exit_code(diff) == 0 and diff["summary"]["comparable"] == 180
+        assert ci["configuration"]["analyzer_sha256"] == report["configuration"]["analyzer_sha256"]
+        with args.ci_input.open("rb") as source, (args.output_dir / "pdfua-bench-v0.3.0-ci-run.json.gz").open("xb") as target:
+            with gzip.GzipFile(filename="", mode="wb", fileobj=target, mtime=0) as compressed:
+                shutil.copyfileobj(source, compressed)
+        ci_summary = {key: ci[key] for key in ("run_id", "environment", "configuration", "summary")}
+        ci_summary.update(schema_version="0.3-evidence-summary", acceptance=load_json(args.ci_acceptance),
+                          note="Independent CI measurement; different runtime context from the local run.")
+        _write_output(json.dumps(ci_summary, indent=2) + "\n", args.output_dir / "pdfua-bench-v0.3.0-ci-summary.json")
     checksums = []
     for path in sorted(args.output_dir.iterdir()):
         digest = hashlib.sha256()

@@ -2,6 +2,23 @@
 
 The `example-v0.1.0.md` and `example-v0.1.0.json` files are sanitized summaries from the initial local validation run. They contain fixture IDs, tool versions, classifications, and limited structural signals; raw validator logs and temporary case files are intentionally excluded.
 
+## v0.3.0 measured evidence
+
+- [Local evidence summary](example-v0.3.0-summary.json) and
+  [readable matrix summary](example-v0.3.0.md).
+- [Independent macOS 14 CI summary](ci-summary-v0.3.0.json).
+- [Release assets](https://github.com/pengshuhao62-lang/pdf-accessibility-roundtrip-bench/releases/tag/v0.3.0)
+  contain the complete local and CI JSON runs as lossless `.json.gz` files,
+  a self-authored single-case PDF bundle, self-comparison and SHA-256 checksums.
+- [Release verification and interpretation](../docs/release-v0.3.0.md).
+
+Summary JSON uses `0.3-evidence-summary`, deliberately distinct from a full
+comparable run. Decompress a complete run to use `compare-runs` or inspect every
+failed check. The full Markdown asset previews 30 checks per output, explicitly identifies the
+preview, and preserves rule IDs and reproduction commands. No checks are removed
+from the full JSON assets. Verified page locations refer to output PDFs, while
+unresolved checks stay visible. Counts of repeated checks are not distinct bugs.
+
 ## v0.2.0 measured evidence
 
 - [Current local run](example-v0.2.0-current.md) and [JSON](example-v0.2.0-current.json): 180 cases on macOS 15.5 arm64, Python 3.9.6, qpdf 12.3.2, PyMuPDF 1.26.5, Ghostscript 10.07.1 and veraPDF 1.30.2.

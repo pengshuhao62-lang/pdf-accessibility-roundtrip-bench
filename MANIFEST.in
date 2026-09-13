@@ -6,3 +6,4 @@ include ATTRIBUTIONS.md CHANGELOG.md toolchain.lock.json action.yml
 include reports/README.md reports/example-v*.json reports/example-v*.md
 include reports/ci-macos14-v0.2.0.json reports/ci-self-comparison-v0.2.0.json
 include reports/comparison-v0.2.0.json reports/comparison-v0.2.0.md
+include reports/ci-summary-v0.3.0.json
