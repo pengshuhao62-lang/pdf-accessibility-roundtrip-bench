@@ -15,3 +15,11 @@ The files under `corpus/ua1/` and `corpus/ua2/` outside the `reference/` directo
 ## Software
 
 The benchmark code is released under the MIT License. veraPDF, qpdf, Ghostscript, PyMuPDF, pypdf, and reportlab remain subject to their respective licenses. The benchmark does not bundle their executables or source distributions.
+# v3 diagnostic-capacity overlay
+
+The optional builder downloads veraPDF Library's `BaseValidator.java` at tag
+v1.30.2, verifies its SHA-256, and changes one diagnostic-storage constant. It
+retains the veraPDF Consortium's original copyright and dual GPLv3+/MPLv2+
+notices and uses the MPLv2+ option. Original and patched sources are preserved
+beside the local build; no modified upstream JAR is redistributed.
+See [build details and upstream sources](docs/verapdf-full-checks.md).

@@ -25,6 +25,9 @@ Unresolved locations remain legitimate complete diagnostics.
 
 ## Export and replay
 
+Use the [full-checks validator overlay](verapdf-full-checks.md) for complete large
+reports. Its explicit version label is part of the reproduction context.
+
 Use a fresh v0.3 measurement and its unchanged case directory:
 
 ```sh

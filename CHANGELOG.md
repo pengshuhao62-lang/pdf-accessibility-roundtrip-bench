@@ -9,6 +9,8 @@
 - Replay bundles only with matching analyzer, environment, dependencies and processing tool.
 - Add isolated GitHub Action run/compare modes, bundled-corpus defaults and CI integration examples.
 - Preserve all 20 fixtures, the complete 180-case matrix and v2 comparison support.
+- Build a source- and JAR-pinned veraPDF capacity overlay to avoid its internal
+  10,000-record truncation; verify unchanged official rule results and counts.
 
 ## [0.2.0] - 2026-09-09
 

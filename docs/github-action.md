@@ -37,7 +37,9 @@ fails before a report can be produced. `output` must be a fresh path.
 
 ## Measure PDFs
 
-Configure the local PDF tools and `JAVA_HOME` as in the README, then use:
+Configure the local PDF tools and `JAVA_HOME` as in the README. For the full
+matrix, set `PDFUA_BENCH_VERAPDF` to the [full-checks overlay](verapdf-full-checks.md),
+then use:
 
 ```yaml
 - uses: pengshuhao62-lang/pdf-accessibility-roundtrip-bench@v0.3.0

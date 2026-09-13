@@ -256,7 +256,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 file=sys.stderr,
             )
             incomplete = {"baseline_invalid", "tool_unavailable", "transformation_failed", "output_unreadable"}
-            return 2 if any(case.classification in incomplete or any(not v.diagnostics_complete for v in case.output_validation) for case in report.cases) else 0
+            missing = sum(not v.diagnostics_complete for case in report.cases for v in case.output_validation)
+            if missing:
+                print(f"Incomplete diagnostic coverage in {missing} output(s); inspect validator storage limits and raw reports.", file=sys.stderr)
+            return 2 if missing or any(case.classification in incomplete for case in report.cases) else 0
 
         if args.command == "export-case":
             from .bundles import export_case

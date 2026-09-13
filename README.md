@@ -31,6 +31,11 @@ The benchmark measures machine-verifiable conformance and limited structure sign
 
 The project targets Python 3.9 or newer. Runtime dependencies are pinned in `setup.cfg`; the tested environment uses the versions in `toolchain.lock.json`.
 
+For the complete v3 matrix, build the [source-pinned full-checks veraPDF overlay](docs/verapdf-full-checks.md).
+Stock veraPDF 1.30.2 truncates large diagnostic reports despite its unlimited CLI
+settings. The overlay preserves validation rules and counts while raising the
+record storage capacity; it requires JDK 17+ and does not modify the original installation.
+
 The benchmark tools are intentionally installed outside this repository in a user-selected external-SSD directory. The exact local path is not part of reports or public documentation.
 
 Set `PDFUA_BENCH_TOOL_ROOT` when the isolated toolchain is not in the default location. You may also set `PDFUA_BENCH_VERAPDF`, `PDFUA_BENCH_QPDF`, and `PDFUA_BENCH_GHOSTSCRIPT` to explicit executable paths.
